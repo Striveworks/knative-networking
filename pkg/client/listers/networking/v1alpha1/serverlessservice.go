@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"os"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
@@ -48,6 +49,13 @@ func NewServerlessServiceLister(indexer cache.Indexer) ServerlessServiceLister {
 
 // List lists all ServerlessServices in the indexer.
 func (s *serverlessServiceLister) List(selector labels.Selector) (ret []*v1alpha1.ServerlessService, err error) {
+	namespace, ok := os.LookupEnv("NAMESPACE_TO_HANDLE")
+	if ok && namespace != "" {
+		err = cache.ListAllByNamespace(s.indexer, namespace, selector, func(m interface{}) {
+			ret = append(ret, m.(*v1alpha1.ServerlessService))
+		})
+		return ret, err
+	}
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
 		ret = append(ret, m.(*v1alpha1.ServerlessService))
 	})
